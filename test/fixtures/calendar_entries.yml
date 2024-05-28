@@ -1,0 +1,13 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  villa: one
+  date: 2024-05-28
+  rate: 1
+  available: false
+
+two:
+  villa: two
+  date: 2024-05-28
+  rate: 1
+  available: false
