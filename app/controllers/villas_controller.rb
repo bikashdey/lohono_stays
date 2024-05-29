@@ -7,7 +7,6 @@ class VillasController < ApplicationController
     number_of_nights = (end_date - start_date).to_i
 
     # Use joins to filter villas with the correct availability and calculate the total rate
-
     villas_with_total_rate = Villa.joins(:calendar_entries).where(calendar_entries: { date: start_date...end_date }).group('villas.id').having('COUNT(calendar_entries.id) = ?', number_of_nights).select('villas.*, SUM(calendar_entries.rate) AS total_rate')
 
     # Calculate average price per night and construct the final data structure
