@@ -7,7 +7,11 @@ class VillasController < ApplicationController
     number_of_nights = (end_date - start_date).to_i
 
     # Use joins to filter villas with the correct availability and calculate the total rate
-    villas_with_total_rate = Villa.joins(:calendar_entries).where(calendar_entries: { date: start_date...end_date }).group('villas.id').having('COUNT(calendar_entries.id) = ?', number_of_nights).select('villas.*, SUM(calendar_entries.rate) AS total_rate')
+    villas_with_total_rate = Villa.joins(:calendar_entries)
+                              .where(calendar_entries: { date: start_date...end_date, available: true })
+                              .group('villas.id')
+                              .having('COUNT(calendar_entries.id) = ?', number_of_nights)
+                              .select('villas.*, SUM(calendar_entries.rate) AS total_rate')
 
     # Calculate average price per night and construct the final data structure
     villas = villas_with_total_rate.map do |villa|
@@ -22,7 +26,7 @@ class VillasController < ApplicationController
     sort_by = params[:sort_by] || 'average_price_per_night'
     order = params[:order] || 'asc'
 
-    if villas.present?
+    if villas.present?      
       villas.sort_by! { |villa| villa[sort_by.to_sym] }
       villas.reverse! if order == 'desc'
       render json: { villas: villas}, status: 200
