@@ -37,12 +37,13 @@ class VillasController < ApplicationController
 
   # api for total rate with gst for given dates
 
-  def total_gst_rate_for_villa
+  def total_gst_rate_for_villa    
     villa = Villa.find_by(id: params[:villa_id])
     start_date = Date.parse(params[:start_date])
     end_date = Date.parse(params[:end_date])
     
     total_days = (end_date - start_date).to_i
+
     if villa.present?
       calendar_entries = villa.calendar_entries.where(date: start_date...end_date, available: true)
       

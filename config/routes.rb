@@ -9,7 +9,7 @@ Rails.application.routes.draw do
   # root "posts#index"
   resources :villas, only: [:index] do
     collection do
-      get 'total_gst_rate_for_villa', to: 'villas#total_gst_rate_for_villa'
+      get 'total_gst_rate_for_villa'
     end
   end
 end
