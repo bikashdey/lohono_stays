@@ -10,10 +10,12 @@ class VillasController < ApplicationController
     villas_with_entries = Villa.includes(:calendar_entries)
                                .where(calendar_entries: { date: start_date...end_date })
                                .references(:calendar_entries)
-
     villas = villas_with_entries.map do |villa|
       calendar_entries = villa.calendar_entries.select { |entry| entry.date >= start_date && entry.date < end_date }
+
+      # Checking if the nights are matching with total calender_entries and all should be  available then villa will show available otherwise it will show villa not availble 
       available = calendar_entries.length == number_of_nights && calendar_entries.all?(&:available)
+
       total_rate = calendar_entries.sum(&:rate)
       average_price_per_night = total_rate / number_of_nights if number_of_nights > 0
 
@@ -30,7 +32,7 @@ class VillasController < ApplicationController
 
     if villas.present?
       # Sort first by availability, then by the specified sorting criterion
-      villas.sort_by! { |villa| [villa[:available] ? 0 : 1, villa[sort_by.to_sym] || 0] }
+      villas.sort_by! { |villa| [villa[:available] ? 0 : 1, villa[sort_by.to_sym]] }
       villas.reverse! if order == 'desc'
       render json: { villas: villas }, status: 200
     else
