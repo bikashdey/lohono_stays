@@ -1,39 +1,43 @@
 class VillasController < ApplicationController
   before_action :check_params
+ 
   def index
     start_date = Date.parse(params[:start_date])
     end_date = Date.parse(params[:end_date])
-    # Calculate the number of nights
     number_of_nights = (end_date - start_date).to_i
 
-    # Use joins to filter villas with the correct availability and calculate the total rate
-    villas_with_total_rate = Villa.joins(:calendar_entries)
-                              .where(calendar_entries: { date: start_date...end_date, available: true })
-                              .group('villas.id')
-                              .having('COUNT(calendar_entries.id) = ?', number_of_nights)
-                              .select('villas.*, SUM(calendar_entries.rate) AS total_rate')
+    # Fetch all villas and their calendar entries for the given date range
+    villas_with_entries = Villa.includes(:calendar_entries)
+                               .where(calendar_entries: { date: start_date...end_date })
+                               .references(:calendar_entries)
 
-    # Calculate average price per night and construct the final data structure
-    villas = villas_with_total_rate.map do |villa|
+    villas = villas_with_entries.map do |villa|
+      calendar_entries = villa.calendar_entries.select { |entry| entry.date >= start_date && entry.date < end_date }
+      available = calendar_entries.length == number_of_nights && calendar_entries.all?(&:available)
+      total_rate = calendar_entries.sum(&:rate)
+      average_price_per_night = total_rate / number_of_nights if number_of_nights > 0
+
       {
         villa: villa,
-        average_price_per_night: villa.total_rate / number_of_nights,
-        available: true
+        average_price_per_night: average_price_per_night,
+        available: available
       }
     end
 
-    # Sort the villas
+    # Sort the villas based on availability and the selected sorting criteria
     sort_by = params[:sort_by] || 'average_price_per_night'
     order = params[:order] || 'asc'
 
-    if villas.present?      
-      villas.sort_by! { |villa| villa[sort_by.to_sym] }
+    if villas.present?
+      # Sort first by availability, then by the specified sorting criterion
+      villas.sort_by! { |villa| [villa[:available] ? 0 : 1, villa[sort_by.to_sym] || 0] }
       villas.reverse! if order == 'desc'
-      render json: { villas: villas}, status: 200
-    else 
-      render json: {message: "villas are not available on this date"}, status: 404
+      render json: { villas: villas }, status: 200
+    else
+      render json: { message: "No villas available for the specified dates" }, status: 404
     end
   end
+
 
   # api for total rate with gst for given dates
 
@@ -64,6 +68,24 @@ class VillasController < ApplicationController
   private
 
   def check_params
-    return render json: {error: "dates are invalid"}, status: 422 unless params[:start_date] && params[:end_date] && params[:end_date] >= params[:start_date]
+    start_date = Date.parse(params[:start_date])
+    end_date = Date.parse(params[:end_date])
+    return render json: {error: "dates are invalid"}, status: 422 unless start_date && end_date && end_date > start_date
+  end
+
+  def check_params
+    if params[:start_date].present? && params[:end_date].present?
+      begin
+        start_date = Date.parse(params[:start_date])
+        end_date = Date.parse(params[:end_date])
+        if end_date < start_date
+          render json: { error: "end_date cannot be earlier than start_date" }, status: 422
+        end
+      rescue ArgumentError
+        render json: { error: "Invalid date format" }, status: 422
+      end
+    else
+      render json: { error: "start_date and end_date are required" }, status: 422
+    end
   end
 end

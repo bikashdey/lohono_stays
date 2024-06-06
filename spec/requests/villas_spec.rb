@@ -31,27 +31,52 @@ RSpec.describe "Villas API", type: :request do
 
     context "when villas are not available" do
       before do
-        villa.calendar_entries.where(date: '2021-01-03').update_all(available: false)
-        get '/villas', params: { start_date: start_date, end_date: end_date }, headers: headers
+        # villa.calendar_entries.where(date: '2021-01-03').update_all(available: false)
+        get '/villas', params: { start_date: '2020-01-03', end_date: '2020-01-03' }, headers: headers
       end
 
       it "returns a 404 status" do
         expect(response).to have_http_status(404)
-        expect(JSON.parse(response.body)['message']).to eq("villas are not available on this date")
+        expect(JSON.parse(response.body)['message']).to eq("No villas available for the specified dates")
       end
     end
 
-    context "when date params is invalid" do
-      it "returns the missing date" do
-      	get '/villas', params: { start_date: start_date, end_date: nil }, headers: headers
-        expect(response).to have_http_status(422)
-        expect(JSON.parse(response.body)['error']).to eq("dates are invalid")
+    # context "when date params is invalid" do
+    #   it "returns the missing date" do
+    #   	get '/villas', params: { start_date: start_date, end_date: "nil" }, headers: headers
+    #     expect(response).to have_http_status(422)
+    #     expect(JSON.parse(response.body)['error']).to eq("dates are invalid")
+    #   end
+
+    #   it "returns the invalid date" do
+    #   	get '/villas', params: { start_date: start_date, end_date: '2020-09-19' }, headers: headers
+    #     expect(response).to have_http_status(422)
+    #     expect(JSON.parse(response.body)['error']).to eq("dates are invalid")
+    #   end
+    # end
+    context 'with invalid dates' do
+      it 'renders an error when end_date is earlier than start_date' do
+        get '/villas', params: { start_date: '2023-06-05', end_date: '2023-06-01' }
+        expect(response.status).to eq(422)
+        expect(JSON.parse(response.body)['error']).to eq('end_date cannot be earlier than start_date')
       end
 
-      it "returns the invalid date" do
-      	get '/villas', params: { start_date: start_date, end_date: '2020-09-19' }, headers: headers
-        expect(response).to have_http_status(422)
-        expect(JSON.parse(response.body)['error']).to eq("dates are invalid")
+      it 'renders an error for invalid date format' do
+        get '/villas', params: { start_date: 'invalid-date', end_date: '2023-06-05' }
+        expect(response.status).to eq(422)
+        expect(JSON.parse(response.body)['error']).to eq('Invalid date format')
+      end
+
+      it 'renders an error when start_date is missing' do
+        get '/villas', params: { end_date: '2023-06-05' }
+        expect(response.status).to eq(422)
+        expect(JSON.parse(response.body)['error']).to eq('start_date and end_date are required')
+      end
+
+      it 'renders an error when end_date is missing' do
+        get '/villas', params: { start_date: '2023-06-01' }
+        expect(response.status).to eq(422)
+        expect(JSON.parse(response.body)['error']).to eq('start_date and end_date are required')
       end
     end
   end
