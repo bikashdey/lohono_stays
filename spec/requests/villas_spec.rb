@@ -41,19 +41,6 @@ RSpec.describe "Villas API", type: :request do
       end
     end
 
-    # context "when date params is invalid" do
-    #   it "returns the missing date" do
-    #   	get '/villas', params: { start_date: start_date, end_date: "nil" }, headers: headers
-    #     expect(response).to have_http_status(422)
-    #     expect(JSON.parse(response.body)['error']).to eq("dates are invalid")
-    #   end
-
-    #   it "returns the invalid date" do
-    #   	get '/villas', params: { start_date: start_date, end_date: '2020-09-19' }, headers: headers
-    #     expect(response).to have_http_status(422)
-    #     expect(JSON.parse(response.body)['error']).to eq("dates are invalid")
-    #   end
-    # end
     context 'with invalid dates' do
       it 'renders an error when end_date is earlier than start_date' do
         get '/villas', params: { start_date: '2023-06-05', end_date: '2023-06-01' }

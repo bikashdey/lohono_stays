@@ -68,12 +68,6 @@ class VillasController < ApplicationController
   private
 
   def check_params
-    start_date = Date.parse(params[:start_date])
-    end_date = Date.parse(params[:end_date])
-    return render json: {error: "dates are invalid"}, status: 422 unless start_date && end_date && end_date > start_date
-  end
-
-  def check_params
     if params[:start_date].present? && params[:end_date].present?
       begin
         start_date = Date.parse(params[:start_date])
